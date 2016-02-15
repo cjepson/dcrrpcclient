@@ -2721,8 +2721,6 @@ func (c *Client) GetInfo() (*dcrjson.InfoWalletResult, error) {
 	return c.GetInfoAsync().Receive()
 }
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 // FutureGetTicketVoteBitsResult is a future promise to deliver the result of a
 // GetTicketVoteBitsAsync RPC invocation (or an applicable error).
 type FutureGetTicketVoteBitsResult chan *response
@@ -2763,8 +2761,6 @@ func (c *Client) GetTicketVoteBits(hash *chainhash.Hash) (*dcrjson.GetTicketVote
 	return c.GetTicketVoteBitsAsync(hash).Receive()
 }
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 // FutureSetTicketVoteBitsResult is a future promise to deliver the result of a
 // SetTicketVoteBitsAsync RPC invocation (or an applicable error).
 type FutureSetTicketVoteBitsResult chan *response
@@ -2796,8 +2792,6 @@ func (c *Client) SetTicketVoteBitsAsync(hash *chainhash.Hash, voteBits uint16) F
 func (c *Client) SetTicketVoteBits(hash *chainhash.Hash, voteBits uint16) error {
 	return c.SetTicketVoteBitsAsync(hash, voteBits).Receive()
 }
-
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // FutureTicketsForAddressResult is a future promise to deliver the result of a
 // GetInfoAsync RPC invocation (or an applicable error).
