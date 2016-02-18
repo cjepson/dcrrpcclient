@@ -179,7 +179,7 @@ type FutureMissedTicketsResult chan *response
 
 // Receive waits for the response promised by the future and returns all
 // currently missed tickets from the missed ticket database.
-func (r FutureMissedTicketsResult) Receive() (*dcrjson.MissedTicketsResult, error) {
+func (r FutureMissedTicketsResult) Receive() ([]*chainhash.Hash, error) {
 	res, err := receiveFuture(r)
 	if err != nil {
 		return nil, err
@@ -191,7 +191,17 @@ func (r FutureMissedTicketsResult) Receive() (*dcrjson.MissedTicketsResult, erro
 	if err != nil {
 		return nil, err
 	}
-	return &container, nil
+
+	missedTickets := make([]*chainhash.Hash, 0, len(container.Tickets))
+	for _, ticketStr := range container.Tickets {
+		h, err := chainhash.NewHashFromStr(ticketStr)
+		if err != nil {
+			return nil, err
+		}
+		missedTickets = append(missedTickets, h)
+	}
+
+	return missedTickets, nil
 }
 
 // MissedTicketsAsync returns an instance of a type that can be used to get the
@@ -206,7 +216,7 @@ func (c *Client) MissedTicketsAsync() FutureMissedTicketsResult {
 // ticket database in the daemon.
 //
 // NOTE: This is a dcrd extension.
-func (c *Client) MissedTickets() (*dcrjson.MissedTicketsResult, error) {
+func (c *Client) MissedTickets() ([]*chainhash.Hash, error) {
 	return c.MissedTicketsAsync().Receive()
 }
 
