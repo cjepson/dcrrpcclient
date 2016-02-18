@@ -173,6 +173,43 @@ func (c *Client) ExistsLiveTicket(hash *chainhash.Hash) (bool, error) {
 	return c.ExistsLiveTicketAsync(hash).Receive()
 }
 
+// FutureMissedTicketsResult is a future promise to deliver the result
+// of a FutureMissedTicketsResultAsync RPC invocation (or an applicable error).
+type FutureMissedTicketsResult chan *response
+
+// Receive waits for the response promised by the future and returns all
+// currently missed tickets from the missed ticket database.
+func (r FutureMissedTicketsResult) Receive() (*dcrjson.MissedTicketsResult, error) {
+	res, err := receiveFuture(r)
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshal the result as a bool.
+	var container dcrjson.MissedTicketsResult
+	err = json.Unmarshal(res, &container)
+	if err != nil {
+		return nil, err
+	}
+	return &container, nil
+}
+
+// MissedTicketsAsync returns an instance of a type that can be used to get the
+// result of the RPC at some future time by invoking the Receive function on the
+// returned instance.
+func (c *Client) MissedTicketsAsync() FutureMissedTicketsResult {
+	cmd := dcrjson.NewMissedTicketsCmd()
+	return c.sendCmd(cmd)
+}
+
+// ExistsLiveTicket returns all currently missed tickets from the missed
+// ticket database in the daemon.
+//
+// NOTE: This is a dcrd extension.
+func (c *Client) MissedTickets() (*dcrjson.MissedTicketsResult, error) {
+	return c.MissedTicketsAsync().Receive()
+}
+
 // FutureListAddressTransactionsResult is a future promise to deliver the result
 // of a ListAddressTransactionsAsync RPC invocation (or an applicable error).
 type FutureListAddressTransactionsResult chan *response
