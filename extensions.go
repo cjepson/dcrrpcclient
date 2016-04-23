@@ -462,6 +462,53 @@ func (c *Client) GetCurrentNet() (wire.CurrencyNet, error) {
 	return c.GetCurrentNetAsync().Receive()
 }
 
+// FutureGetTicketPoolValueResult is a future promise to deliver the result of a
+// GetTicketPoolValueAsync RPC invocation (or an applicable error).
+type FutureGetTicketPoolValueResult chan *response
+
+// Receive waits for the response promised by the future and returns the network
+// the server is running on.
+func (r FutureGetTicketPoolValueResult) Receive() (dcrutil.Amount, error) {
+	res, err := receiveFuture(r)
+	if err != nil {
+		return 0, err
+	}
+
+	// Unmarshal result as a float64.
+	var val float64
+	err = json.Unmarshal(res, &val)
+	if err != nil {
+		return 0, err
+	}
+
+	// Convert to an amount.
+	amt, err := dcrutil.NewAmount(val)
+	if err != nil {
+		return 0, err
+	}
+
+	return amt, nil
+}
+
+// GetTicketPoolValueAsync returns an instance of a type that can be used to
+// get the result of the RPC at some future time by invoking the Receive
+// function on the returned instance.
+//
+// See GetTicketPoolValue for the blocking version and more details.
+//
+// NOTE: This is a dcrd extension.
+func (c *Client) GetTicketPoolValueAsync() FutureGetTicketPoolValueResult {
+	cmd := dcrjson.NewGetTicketPoolValueCmd()
+	return c.sendCmd(cmd)
+}
+
+// GetTicketPoolValue returns the value of the live ticket pool.
+//
+// NOTE: This is a dcrd extension.
+func (c *Client) GetTicketPoolValue() (dcrutil.Amount, error) {
+	return c.GetTicketPoolValueAsync().Receive()
+}
+
 // FutureListAddressTransactionsResult is a future promise to deliver the result
 // of a ListAddressTransactionsAsync RPC invocation (or an applicable error).
 type FutureListAddressTransactionsResult chan *response

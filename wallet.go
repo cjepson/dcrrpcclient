@@ -761,7 +761,7 @@ func (r FuturePurchaseTicketResult) Receive() ([]*chainhash.Hash, error) {
 // when they come.
 func (c *Client) PurchaseTicketAsync(fromAccount string,
 	spendLimit dcrutil.Amount, minConf *int, ticketAddress dcrutil.Address,
-	numTickets *int, poolAddress dcrutil.Address, poolFees dcrutil.Amount,
+	numTickets *int, poolAddress dcrutil.Address, poolFees *dcrutil.Amount,
 	expiry *int) FuturePurchaseTicketResult {
 	// Parse the addresses into pointers to strings
 	// for the purpose of the command.
@@ -790,7 +790,7 @@ func (c *Client) PurchaseTicketAsync(fromAccount string,
 // puchasetickets command.
 func (c *Client) PurchaseTicket(fromAccount string,
 	spendLimit dcrutil.Amount, minConf *int, ticketAddress dcrutil.Address,
-	numTickets *int, poolAddress dcrutil.Address, poolFees dcrutil.Amount,
+	numTickets *int, poolAddress dcrutil.Address, poolFees *dcrutil.Amount,
 	expiry *int) ([]*chainhash.Hash, error) {
 
 	return c.PurchaseTicketAsync(fromAccount, spendLimit, minConf, ticketAddress,
