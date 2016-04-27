@@ -3123,6 +3123,44 @@ func (c *Client) SetTxFee(fee dcrutil.Amount) error {
 	return c.SetTxFeeAsync(fee).Receive()
 }
 
+// FutureStakePoolUserInfoResult is a future promise to deliver the result of a
+// GetInfoAsync RPC invocation (or an applicable error).
+type FutureStakePoolUserInfoResult chan *response
+
+// Receive waits for the response promised by the future and returns the info
+// provided by the server.
+func (r FutureStakePoolUserInfoResult) Receive() (*dcrjson.StakePoolUserInfoResult, error) {
+	res, err := receiveFuture(r)
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshal result as a stakepooluserinfo result object.
+	var infoRes dcrjson.StakePoolUserInfoResult
+	err = json.Unmarshal(res, &infoRes)
+	if err != nil {
+		return nil, err
+	}
+
+	return &infoRes, nil
+}
+
+// StakePoolUserInfoAsync returns an instance of a type that can be used to
+// get the result of the RPC at some future time by invoking the Receive
+// function on the returned instance.
+//
+// See GetInfo for the blocking version and more details.
+func (c *Client) StakePoolUserInfoAsync(addr dcrutil.Address) FutureStakePoolUserInfoResult {
+	cmd := dcrjson.NewStakePoolUserInfoCmd(addr.EncodeAddress())
+	return c.sendCmd(cmd)
+}
+
+// StakePoolUserInfo returns a list of tickets and information about them
+// that are paying to the passed address.
+func (c *Client) StakePoolUserInfo(addr dcrutil.Address) (*dcrjson.StakePoolUserInfoResult, error) {
+	return c.StakePoolUserInfoAsync(addr).Receive()
+}
+
 // FutureTicketsForAddressResult is a future promise to deliver the result of a
 // GetInfoAsync RPC invocation (or an applicable error).
 type FutureTicketsForAddressResult chan *response
