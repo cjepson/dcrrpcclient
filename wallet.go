@@ -2817,6 +2817,47 @@ func (c *Client) AccountSyncAddressIndex(account string, branch uint32, index in
 	return c.AccountSyncAddressIndexAsync(account, branch, index).Receive()
 }
 
+//-------------------------
+
+// FutureAddTicketResult is a future promise to deliver the result of a
+// AddTicketAsync RPC invocation (or an applicable error).
+type FutureAddTicketResult chan *response
+
+// Receive waits for the response promised by the future and returns the info
+// provided by the server.
+func (r FutureAddTicketResult) Receive() error {
+	_, err := receiveFuture(r)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// AddTicketAsync returns an instance of a type that can be used to get the result
+// of the RPC at some future time by invoking the Receive function on the
+// returned instance.
+//
+// See AddTicket for the blocking version and more details.
+func (c *Client) AddTicketAsync(rawHex string) FutureAddTicketResult {
+	cmd := dcrjson.NewAddTicketCmd(rawHex)
+	return c.sendCmd(cmd)
+}
+
+// AddTicket manually adds a new ticket to the wallet stake manager. This is used
+// to override normal security settings to insert tickets which would not
+// otherwise be added to the wallet.
+func (c *Client) AddTicket(ticket *dcrutil.Tx) error {
+	ticketB, err := ticket.MsgTx().Bytes()
+	if err != nil {
+		return err
+	}
+
+	return c.AddTicketAsync(hex.EncodeToString(ticketB)).Receive()
+}
+
+//-------------------------
+
 // NOTE: While getinfo is implemented here (in wallet.go), a dcrd chain server
 // will respond to getinfo requests as well, excluding any wallet information.
 

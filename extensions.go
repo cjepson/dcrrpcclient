@@ -99,6 +99,54 @@ func (c *Client) DebugLevel(levelSpec string) (string, error) {
 	return c.DebugLevelAsync(levelSpec).Receive()
 }
 
+// FutureEstimateStakeDiffResult is a future promise to deliver the result of a
+// EstimateStakeDiffAsync RPC invocation (or an applicable error).
+type FutureEstimateStakeDiffResult chan *response
+
+// Receive waits for the response promised by the future and returns the hash
+// and height of the block in the longest (best) chain.
+func (r FutureEstimateStakeDiffResult) Receive() (dcrutil.Amount, error) {
+	res, err := receiveFuture(r)
+	if err != nil {
+		return 0, err
+	}
+
+	// Unmarsal result as a estimatestakediff result object.
+	var est float64
+	err = json.Unmarshal(res, &est)
+	if err != nil {
+		return 0, err
+	}
+
+	// Convert to amount.
+	amt, err := dcrutil.NewAmount(est)
+	if err != nil {
+		return 0, err
+	}
+
+	return amt, nil
+}
+
+// EstimateStakeDiffAsync returns an instance of a type that can be used to get the
+// result of the RPC at some future time by invoking the Receive function on the
+// returned instance.
+//
+// See EstimateStakeDiff for the blocking version and more details.
+//
+// NOTE: This is a dcrd extension.
+func (c *Client) EstimateStakeDiffAsync(tickets *uint32) FutureEstimateStakeDiffResult {
+	cmd := dcrjson.NewEstimateStakeDiffCmd(tickets)
+	return c.sendCmd(cmd)
+}
+
+// EstimateStakeDiff returns the minimum, maximum, and expected next stake
+// difficulty.
+//
+// NOTE: This is a dcrd extension.
+func (c *Client) EstimateStakeDiff(tickets *uint32) (dcrutil.Amount, error) {
+	return c.EstimateStakeDiffAsync(tickets).Receive()
+}
+
 // FutureExistsAddressResult is a future promise to deliver the result
 // of a FutureExistsAddressResultAsync RPC invocation (or an applicable error).
 type FutureExistsAddressResult chan *response
@@ -743,4 +791,105 @@ func (c *Client) TicketFeeInfoAsync(blocks *uint32, windows *uint32) FutureTicke
 // NOTE: This is a decred extension.
 func (c *Client) TicketFeeInfo(blocks *uint32, windows *uint32) (*dcrjson.TicketFeeInfoResult, error) {
 	return c.TicketFeeInfoAsync(blocks, windows).Receive()
+}
+
+// FutureTicketVWAPResult is a future promise to deliver the result of a
+// TicketVWAPAsync RPC invocation (or an applicable error).
+type FutureTicketVWAPResult chan *response
+
+// Receive waits for the response promised by the future and returns the
+// ticketvwap result.
+func (r FutureTicketVWAPResult) Receive() (dcrutil.Amount, error) {
+	res, err := receiveFuture(r)
+	if err != nil {
+		return 0, err
+	}
+
+	// Unmarsal result as a ticketvwap result object.
+	var vwap float64
+	err = json.Unmarshal(res, &vwap)
+	if err != nil {
+		return 0, err
+	}
+
+	amt, err := dcrutil.NewAmount(vwap)
+	if err != nil {
+		return 0, err
+	}
+
+	return amt, nil
+}
+
+// TicketVWAPAsync returns an instance of a type that can be used to get the result
+// of the RPC at some future time by invoking the Receive function on the
+// returned instance.
+//
+// See TicketVWAP for the blocking version and more details.
+//
+// NOTE: This is a decred extension.
+func (c *Client) TicketVWAPAsync(start *uint32, end *uint32) FutureTicketVWAPResult {
+	// Not supported in HTTP POST mode.
+	if c.config.HTTPPostMode {
+		return newFutureError(ErrWebsocketsRequired)
+	}
+
+	cmd := dcrjson.NewTicketVWAPCmd(start, end)
+	return c.sendCmd(cmd)
+}
+
+// TicketVWAP returns the vwap weighted average price of tickets.
+//
+// This RPC requires the client to be running in websocket mode.
+//
+// NOTE: This is a decred extension.
+func (c *Client) TicketVWAP(start *uint32, end *uint32) (dcrutil.Amount, error) {
+	return c.TicketVWAPAsync(start, end).Receive()
+}
+
+// FutureTxFeeInfoResult is a future promise to deliver the result of a
+// TxFeeInfoAsync RPC invocation (or an applicable error).
+type FutureTxFeeInfoResult chan *response
+
+// Receive waits for the response promised by the future and returns the
+// txfeeinfo result.
+func (r FutureTxFeeInfoResult) Receive() (*dcrjson.TxFeeInfoResult, error) {
+	res, err := receiveFuture(r)
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarsal result as a txfeeinfo result object.
+	var tfir dcrjson.TxFeeInfoResult
+	err = json.Unmarshal(res, &tfir)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tfir, nil
+}
+
+// TxFeeInfoAsync returns an instance of a type that can be used to get the result
+// of the RPC at some future time by invoking the Receive function on the
+// returned instance.
+//
+// See TxFeeInfo for the blocking version and more details.
+//
+// NOTE: This is a decred extension.
+func (c *Client) TxFeeInfoAsync(blocks *uint32, start *uint32, end *uint32) FutureTxFeeInfoResult {
+	// Not supported in HTTP POST mode.
+	if c.config.HTTPPostMode {
+		return newFutureError(ErrWebsocketsRequired)
+	}
+
+	cmd := dcrjson.NewTxFeeInfoCmd(blocks, start, end)
+	return c.sendCmd(cmd)
+}
+
+// TxFeeInfo returns information about tx fees.
+//
+// This RPC requires the client to be running in websocket mode.
+//
+// NOTE: This is a decred extension.
+func (c *Client) TxFeeInfo(blocks *uint32, start *uint32, end *uint32) (*dcrjson.TxFeeInfoResult, error) {
+	return c.TxFeeInfoAsync(blocks, start, end).Receive()
 }
